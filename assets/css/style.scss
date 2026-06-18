@@ -1,7 +1,13 @@
 ---
 ---
 
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+
 @import "{{ site.theme }}";
+
+body, h1, h2, h3, h4, h5, h6 {
+  font-family: 'Josefin Sans', sans-serif;
+}
 
 // 1. Override the Cayman header with the Long Horizon brand gradient
 .page-header {
