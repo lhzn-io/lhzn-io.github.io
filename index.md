@@ -3,7 +3,7 @@ layout: default
 title: Home
 ---
 
-# Long Horizon Engineering
+# Long Horizon Observatory - Engineering Blog
 
 Welcome to the open-source engineering and R&D blog for [Long Horizon](https://longhorizon.eco). We document our workflows, models, and architectures here.
 
