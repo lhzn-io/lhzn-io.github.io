@@ -3,7 +3,44 @@
 
 @import "{{ site.theme }}";
 
+// 1. Override the Cayman header with the Long Horizon brand gradient
 .page-header {
   background-color: #2B4457;
   background-image: linear-gradient(to right, #6C818F 0%, #2B4457 80%);
+}
+
+// 2. Set the main body background to an Observatory dark slate hue
+body {
+  background-color: #15202b;
+  color: #e2e8f0;
+}
+
+// 3. Bring in the Long Horizon brand yellow (#DECF03) for links and accents
+a {
+  color: #DECF03;
+  
+  &:hover {
+    color: #fde047;
+  }
+}
+
+// 4. Ensure typography and code blocks pop against the dark background
+.main-content {
+  h1, h2, h3, h4, h5, h6 {
+    color: #f8fafc;
+  }
+  
+  code {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fde047; 
+  }
+  
+  pre code {
+    color: #e2e8f0;
+  }
+  
+  blockquote {
+    color: #94a3b8;
+    border-left-color: #DECF03;
+  }
 }

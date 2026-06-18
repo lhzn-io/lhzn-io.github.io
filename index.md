@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Home
+title: Long Horizon Observatory
 ---
 
 # Long Horizon Observatory - Engineering Blog
