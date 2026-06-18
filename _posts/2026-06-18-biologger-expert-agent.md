@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: default
 title: "An Instrumented AI Agent for Marine Predator Biotelemetry Analysis"
 date: 2026-06-18 12:00:00 -0400
 categories: engineering
