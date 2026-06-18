@@ -1,0 +1,127 @@
+---
+layout: post
+title: "An Instrumented AI Agent for Marine Predator Biotelemetry Analysis"
+date: 2026-06-18 12:00:00 -0400
+categories: engineering
+---
+
+# An Instrumented AI Agent for Marine Predator Biotelemetry Analysis
+
+## Introduction
+
+![Biologger Expert Agent Dashboard](/path/to/placeholder/screenshot.jpg)
+
+Marine biotelemetry animal tracking represents a highly specialized domain of marine science. To study predator behavior, researchers at the [Woods Hole Oceanographic Institution (WHOI) Marine Predators Group (MPG)](https://marinepredators.whoi.edu/) deploy pop-off Satellite Archival Tags (PSATs) that archive ambient ocean profiles before releasing to transmit data via satellite, as well as Argos satellite transmitters (e.g. SPOT tags) that compute Doppler-based locations in near-real-time when the animal breaks the surface. While these sensors record fine-grained predator kinematics, interpreting the raw streams and identifying specific animal behaviors requires deep expertise in predator ecology and bio-logging mechanics.
+
+To streamline the process required for the WHOI-MPG lab to onboard and analyze their growing set of animal telemetry bio-logger deployment datasets, we developed a prototype agentic system with a dual-component architecture: [`biologger-expert`](https://github.com/lhzn-io/biologger-expert), a domain-specialized, fine-tuned Vision-Language Model (VLM), and [`biologger-agent`](https://github.com/lhzn-io/biologger-agent), a biotelemetry analysis and simulation orchestration agent.
+
+Integrated via our open-source [`uplift`](https://github.com/lhzn-io/uplift) framework, this system helps researchers analyze multi-sensor tag calibration sheets, evaluate deployment postures, and resolve telemetry anomalies. The `uplift` framework augments an underlying ZeroClaw gateway with user-assistance instrumentation, quantifying exactly how effectively the deployed agents support their human operators. The `biologger-agent` customization coordinates tool execution using existing and forthcoming biologger-agent skills like checking the system health, evaluating dataset fidelity, and running animal trajectory simulations.
+
+To transform the system from a general assistant into an instrumented biotelemetry analysis agent, we customized its core reasoning engine by fine-tuning the underlying VLM model on a corpus of peer-reviewed research publications focused on biologger telemetry analysis and dependent capabilities (e.g. INS and dead-reckoning from the world of drones). This post details the end-to-end engineering behind the data ingestion pipeline, knowledge distillation, Supervised Fine-Tuning (SFT) and hyperparameter optimization, agent customization, dataset dashboard integration, and real-time 3D simulation streaming.
+
+---
+
+## 1. The Data Ingestion Pipeline
+
+To compile the domain knowledge necessary for biotelemetry consulting, we systematically reviewed the literature, starting with the WHOI-MPG lab's own papers and citations, as well as looking for approaches to solving similar problems with farm animals, pets, and drones/robots. Given this extensive collection of PDFs and tag specification sheets, we designed an automated ingestion and distillation pipeline using a shared core package: [`expert-distiller`](https://github.com/lhzn-io/expert-distiller).
+
+```mermaid
+flowchart LR
+    A["Academic Papers &<br>Telemetry Specs"] --> B["LayoutParser<br>(Markdown Table)"]
+    B --> C["MultimodalDistiller<br>(Visual Scan)"]
+    C --> D["QADatasetSynthesizer<br>(Gemini SFT)"]
+    D --> E["mlx-vlm SFT<br>(converged 0.13)"]
+```
+
+1.  **Layout-Aware Parsing:** The `LayoutParser` module ingests raw scientific papers, PDF manuals, and calibration spreadsheets. It converts layout-sensitive tables into clean markdown grid structures, ensuring structural tables are not lost in flat-text layouts.
+2.  **Visual Page Distillation:** Tag specifications and depth charts rely heavily on figures and plots. The `MultimodalDistiller` renders PDF sheets as high-resolution images, scanning them page-by-page to generate visual transpositions.
+3.  **SFT QA Synthesis & Layout De-contextualization:** The `QADatasetSynthesizer` matches the raw text and visual transpositions to prompt LLM engines for high-depth SFT question-answer pairs, ensuring questions reflect specific sensor limits and species calibration equations. We achieved a layout-agnostic SFT dataset by ensuring our prompt automatically de-contextualizes layout-dependent language (e.g. rewriting "the tag in Figure 2" to "Swordfish migration limits"). While we initially produced good results locally using a free instance of Gemma4, we ultimately utilized a cloud-hosted model (Gemini 3.5 Flash) via API to accelerate this synthesis step and dramatically increase pipeline throughput.
+
+---
+
+## 2. SFT Hyperparameter Tuning & Training Convergence
+
+Our initial SFT runs on the Apple Silicon Mac Studio (an M4 Max with 128GB VRAM—a highly capable configuration no longer available after we scooped it up in late 2025) exposed a severe LoRA underfitting problem. Using a learning rate of `1e-5` for `1000` SFT iterations, the validation loss stalled at `1.397`. This underfitting allowed base model priors to dominate, causing the model to hallucinate tag specifications (e.g. claiming an acoustic tag had a massive 140 km error boundary typical of older light-based geolocation, when its true acoustic triangulation precision is sub-kilometer).
+
+To resolve this, we optimized our training hyperparameters:
+*   **Base Architecture:** `google/gemma-4-26b-a4b-it` (26B total, 4B active MoE)
+*   **Method:** Metal-accelerated LoRA (Rank 16, Alpha 20.0, Dropout 0.05)
+*   **Learning Rate:** `1e-4` (increased from `1e-5` to accelerate adaptation)
+*   **Iterations:** `5000` SFT steps (~13 epochs on the 1,550-pair dataset)
+
+By running training for 5000 steps with the optimized learning rate, the training loss successfully converged to **`0.138`**. Post-training diagnostics confirmed that the VLM now recalls the exact sensor limits and error boundaries with zero hallucinations.
+
+---
+
+## 3. Walkthrough: Fine-Tuning the Model to Customize the Instrumented Agent
+
+Below is the platform-agnostic, step-by-step walkthrough to execute the fine-tuning training and deploy the customized agent on our lab's Mac Studio:
+
+### Step 1: Pre-flight Resource Reclamation
+Before training starts, stop any active VLM inference daemon on the Mac Studio node to reclaim memory headroom. Ensure at least 16 GB of unified memory headroom exists before proceeding.
+
+### Step 2: Run the SFT Training Pipeline
+Trigger the LoRA fine-tuning script. The process uses the custom `mlx-vlm` package, applying the optimized hyperparameters (learning rate `1e-4`, rank `16`, alpha `20.0`, iterations `5000`). Monitor the convergence of training loss in the logs to ensure loss drops below `0.15`.
+
+### Step 3: Deploy the Fine-Tuned Model Server
+Once the training completes and the adapters are saved, restart the MLX-VLM model server and validate that the endpoint is responsive.
+
+### Step 4: Configure the Uplift Gateway
+Configure the Uplift agent gateway to route its completions to the new fine-tuned model. Open the gateway config file `config/.zeroclaw/config.toml` and configure the model provider blocks:
+```toml
+[providers.models.vllm]
+model = "google/gemma-4-26b-a4b-it"
+base_url = "http://host.docker.internal:8080/v1"
+```
+Because the gateway communicates via stateless API calls, pointing `base_url` to the newly loaded model server natively customizes the Uplift reasoning loops with the fine-tuned biotelemetry domain knowledge.
+
+---
+
+## 4. Generating and Deploying the biologger-agent Gateway
+
+To deploy the fine-tuned VLM model with practical agentic capabilities, we deployed the [`biologger-agent`](https://github.com/lhzn-io/biologger-agent) container. Generating and deploying this agentic gateway involved several core integration steps:
+
+*   **Sovereign Environment Isolation:** We structured a dual-container deployment via Docker Compose. The first container runs the ZeroClaw proxy gateway (handling WebSocket sessions, REST routes, and AIEOS identity mapping), while the second hosts a Selenium/Chromium browser automation node. This allows the agent to execute web-scraping and diagnostic actions inside a secure sandbox.
+*   **Telemetry Workspace Binding:** To enable the agent to analyze sensor files directly, we mounted the host's raw and processed telemetry datasets (`/Users/lhzn/Projects/whoi-mpg/datasets`) read-only into the gateway's `/zeroclaw-data/datasets` mount. 
+*   **Identity Persona Configuration:** We configured AIEOS metadata (`identity.json`) in the gateway's active workspace, setting the assistant's bio, origin, and residence to target the WHOI-MPG environment.
+*   **Custom Tool Bindings:** We defined specialized skills and workflows in the agent's workspace, giving the reasoning loop direct CLI capabilities to execute local dead-reckoning scripts, verify database integrity, and pipe outputs back to the user interface.
+
+---
+
+## 5. 3D Posturing & Trajectory Simulation
+
+The biologger agent stack also coordinates real-time predator trajectory streaming. The Python-based [`biologger-sim`](https://github.com/lhzn-io/biologger-sim) environment processes offline dead-reckoning algorithms to compute 3D predator swimming profiles. While initially configured on isolated lab hosts, we are porting the physics engine to be fully multi-platform so it can run locally to the agent on the Mac.
+
+The simulator streams tag sensor parameters in real-time over ZeroMQ publishing sockets (Port 5555). A visualizer client connects to the socket, rendering high-fidelity 3D models of Swordfish and Whale Sharks showing orientation, pitch, roll, and heading in real-time.
+
+![Biologger Simulator 3D Visualizer](https://raw.githubusercontent.com/lhzn-io/biologger-sim/main/screenshot.png)
+
+---
+
+## 6. Open-Source Infrastructure & Repository Directory
+
+To enable reproducible deployments and support the broader marine science community, the expert consultant system is built on a modular, open-source toolchain:
+
+*   **[`lhzn-io/biologger-agent`](https://github.com/lhzn-io/biologger-agent):** The deployment gateway repository hosting containerized configurations, multi-session SQLite history schemas, and the ZeroClaw proxy service.
+*   **[`lhzn-io/biologger-expert`](https://github.com/lhzn-io/biologger-expert):** The active adapter model repository containing LoRA fine-tuning hyperparameters, Apple Silicon SFT training logs, and validation runs.
+*   **[`lhzn-io/expert-distiller`](https://github.com/lhzn-io/expert-distiller):** The layout-aware ingestion and SFT dataset generation library that processes PDFs and spreadsheets into de-contextualized text.
+*   **[`lhzn-io/uplift`](https://github.com/lhzn-io/uplift):** The agentic framework that compiles ZeroClaw sovereign gateway loops, manages execution sandboxes, and orchestrates tool bindings.
+*   **[`lhzn-io/expert-quantizer`](https://github.com/lhzn-io/expert-quantizer):** An optional Marlin-compatible AWQ weight quantizer (not used in this specific Mac Studio deployment, which runs MLX 4-bit weights, but available for symmetric Linux-based GPU serving).
+
+---
+
+## 7. Future Work: Next-Generation Biotelemetry Intelligence
+
+As our deployment scales, we are pursuing several visionary research directions to further accelerate WHOI's marine ecology capabilities:
+
+1.  **Self-Evolving UI & Portals:** A primary goal is to enable the `biologger-agent` to dynamically modify and update the codebase for the `biologger-portal` in real-time. This would realize a self-evolving dashboard where privileged users can simply prompt the agent for UI extensions and layout customizations—essentially treating the application interface as fluid, agent-managed state.
+2.  **Multimodal Time-Series Fusion:** Moving beyond text and layout QA distillation, our next goal is to train the VLM to natively ingest high-frequency, multivariate time-series arrays (e.g., 400Hz 3-axis accelerometry, magnetometry, and temperature curves) aligned with animal-borne video streams. By aligning sensor tokens with visual frames, the agent could automatically segment and annotate elusive micro-behaviors (like precise prey capture events or burst-coast swimming kinematics) directly from raw tag data.
+3.  **Continuous Alignment & Active Curriculum Learning:** To maintain impeccable modeling hygiene, we are designing a closed-loop data flywheel. When the [`biologger-agent`](https://github.com/lhzn-io/biologger-agent) encounters ambiguous telemetry anomalies in production, it will flag the sequence and query our domain experts via the ZeroClaw interface. This human-in-the-loop feedback will automatically trigger overnight data-distillation pipelines, recursively updating the SFT dataset and orchestrating a fresh model fine-tuning run to continuously counteract data drift.
+4.  **On-Edge Agentic Processing:** Currently, dead-reckoning and trajectory simulations execute on our lab's centralized compute nodes. As an intermediate step, we plan to deploy the agent onto low-power GPU-enabled devices, such as a Jetson Orin, running directly on the recovery boat to assist staff in locating animals and dynamically directing tag retrieval. Ultimately, we are researching the deployment of ultra-quantized (sub-1B parameter) distillation models directly onto the low-power microcontrollers embedded within the bio-logging tags themselves. By classifying behavioral states *on the animal*, the tag can transmit highly compressed behavioral event logs via satellite rather than relying on massive post-recovery downloads, revolutionizing real-time pelagic ecology.
+5.  **Multi-Agent Swarm Orchestration:** We envision upgrading the system from a single consultant to a collaborative ecosystem of customized AI agents across WHOI. For instance, the [`biologger-agent`](https://github.com/lhzn-io/biologger-agent) could collaborate with an AUV (Autonomous Underwater Vehicle) dispatcher to automatically deploy a glider and collect high-resolution bathymetry data for an unmapped seamount that tag data reveals an animal has recently visited. It could similarly interface with expedition planners to dynamically schedule both crewed & autonomous tag recovery intercepts.
+
+---
+
+## Conclusion
+
+By combining custom layout ingestion, strict dataset de-contextualization, optimized SFT hyperparameters on Apple Silicon, and ZeroClaw agent persistence, we built a specialized, domain-expert biotelemetry workspace. The stack provides WHOI researchers with a reliable, factual tool to accelerate marine predator kinematics analysis and behavior modeling.
