@@ -1,6 +1,6 @@
 title: "Long Horizon Observatory - Engineering Blog"
 description: "The engineering and R&D blog for lhzn-io."
-theme: jekyll-theme-minimal
+theme: jekyll-theme-cayman
 url: "https://lhzn-io.github.io"
 github:
   repository_url: "https://github.com/lhzn-io/lhzn-io.github.io"
