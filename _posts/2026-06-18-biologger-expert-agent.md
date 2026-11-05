@@ -2,8 +2,6 @@
 
 ## Introduction
 
-![Biologger Expert Agent Dashboard](/path/to/placeholder/screenshot.jpg)
-
 Marine biotelemetry animal tracking represents a highly specialized domain of marine science. To study predator behavior, researchers at the [Woods Hole Oceanographic Institution (WHOI) Marine Predators Group (MPG)](https://marinepredators.whoi.edu/) deploy pop-off Satellite Archival Tags (PSATs) that archive ambient ocean profiles before releasing to transmit data via satellite, as well as Argos satellite transmitters (e.g. SPOT tags) that compute Doppler-based locations in near-real-time when the animal breaks the surface. While these sensors record fine-grained predator kinematics, interpreting the raw streams and identifying specific animal behaviors requires deep expertise in predator ecology and bio-logging mechanics.
 
 To streamline the process required for the WHOI-MPG lab to onboard and analyze their growing set of animal telemetry bio-logger deployment datasets, we developed a prototype agentic system with a dual-component architecture: [`biologger-expert`](https://github.com/lhzn-io/biologger-expert), a domain-specialized, fine-tuned Vision-Language Model (VLM), and [`biologger-agent`](https://github.com/lhzn-io/biologger-agent), a biotelemetry analysis and simulation orchestration agent.
@@ -82,8 +80,6 @@ To field the fine-tuned VLM model with practical agentic capabilities, we deploy
 The biologger agent stack also coordinates real-time predator trajectory streaming. The Python-based [`biologger-sim`](https://github.com/lhzn-io/biologger-sim) environment processes offline dead-reckoning algorithms to compute 3D predator swimming profiles. While `biologger-sim` was originally developed to take advantage of NVIDIA Warp to speed up physics computations, we are porting the physics engine to be multi-platform so it can run locally to the agent on the Mac for agile simulation on Apple Silicon, as well as submit long-running simulations to server-class NVIDIA GPU nodes.
 
 The simulator streams tag sensor parameters in real-time over ZeroMQ. NVIDIA Omniverse, a 3D visualization engine optimized for NVIDIA RTX GPUs connects to the socket, and renders high-fidelity 3D models of Swordfish and Whale Sharks replaying the changes in their orientation, pitch, roll, and heading in real-time, allowing the scientists to visually inspect the results of multiple versions of their dead-reckoning algorithms and behavioral classification models over the lifetime of the tag deployment.
-
-![Biologger Simulator 3D Visualizer](https://longhorizon.eco/images/whoi/biologger-sim-optimized.jpg)
 
 ---
 
