@@ -2,9 +2,9 @@
 
 Our boat already knows a great deal about where it is and what the water is doing. Its chartplotters, heading sensor, sounder and radio share position, speed, heading, depth and water temperature with one another many times a second, and then the numbers are gone. `bosn` (short for boatswain, the crew member responsible for the boat's equipment) is a small computer that sits on that network, records everything, and makes it available to software ashore and aboard. This post describes it from the ground up: the network it listens to, the hardware in the box, what it does with the data, and the power design we are moving to after two months of use.
 
-![The open bosn enclosure aboard, a yellow Nanuk case on an HDPE plate: the NMEA 2000 bulkhead and micro-C tee at top right with the lever-connector blocks below it; the Mean Well converter in the center right; the Raspberry Pi 5 with the LoRa bonnet and its OLED at lower left beside the 2 TB SSD; the CAN adapter's green terminal and the USB serial cable above the Pi; the WIBL logger's board along the bottom edge; the LoRa antenna through the top wall](/assets/images/bosn/bosn-enclosure-v1.jpg)
+![The open bosn enclosure aboard, a yellow Nanuk case on an HDPE plate, turned so the bus comes in on the left as in the wiring diagram: the NMEA 2000 bulkhead and micro-C tee at top left with the lever-connector blocks below them; the Mean Well converter at top center; the WIBL logger's board standing along the right edge; the Raspberry Pi 5 with the LoRa bonnet and its OLED at lower right beside the 2 TB SSD; the CAN adapter's green terminal and the USB serial cable to the left of the Pi; the LoRa antenna through the left wall](/assets/images/bosn/bosn-enclosure-v1.jpg)
 
-*The enclosure aboard, October 22. This photo shows the v1 power supply, the silver Mean Well converter at center right; the wiring diagram below is the v2 design that replaces it.*
+*The enclosure aboard, October 22, turned so the bus enters on the left as in the wiring diagram below. This photo shows the v1 power supply, the silver Mean Well converter at top center; the diagram is the v2 design that replaces it.*
 
 ## The network on a boat: NMEA 2000
 
