@@ -1,7 +1,7 @@
 ---
 ---
 
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import "{{ site.theme }}";
 
@@ -24,7 +24,7 @@ body {
 // 3. Bring in the Long Horizon brand yellow (#DECF03) for links and accents
 a {
   color: #DECF03;
-  
+
   &:hover {
     color: #fde047;
   }
@@ -35,16 +35,64 @@ a {
   h1, h2, h3, h4, h5, h6 {
     color: #f8fafc;
   }
-  
+
+  // body copy in Josefin Sans Light; headings keep the theme's bold
+  p, li {
+    font-weight: 300;
+  }
+
+  // Inline code: a dark chip, so it reads against the slate background; kept shorter than the line so
+  // chips on neighbouring lines do not crowd each other
   code {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fde047; 
+    background-color: #262c36;
+    color: #fde047;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.8em;
+    line-height: 1;
+    padding: 0.1em 0.3em;
+    border-radius: 0.25rem;
+    border: 1px solid #333a46;
   }
-  
-  pre code {
+
+  // Code blocks: Cayman paints them light gray, which left our light code text unreadable; use a dark charcoal block
+  // (only the pre draws the block; Rouge's wrapper divs stay transparent so blocks do not nest)
+  div.highlighter-rouge,
+  div.highlight {
+    background-color: transparent;
+    border: none;
+  }
+
+  pre {
+    background-color: #1a202c;
     color: #e2e8f0;
+    border: 1px solid #2d3748;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+
+    code {
+      color: #e2e8f0;
+      background-color: transparent;
+      border: none;
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding: 0;
+      border-radius: 0;
+
+      // Rouge syntax tokens on the dark block
+      .c, .c1, .cm { color: #8b949e; font-style: italic; } // comments
+      .k, .kd, .kp, .kr, .kt { color: #ff7b72; font-weight: 600; } // keywords
+      .s, .s1, .s2, .sb, .sc, .sd, .sh, .sr, .ss { color: #a5d6ff; } // strings
+      .m, .mf, .mh, .mi, .mo, .il { color: #79c0ff; } // numbers
+      .nf, .nf .fm { color: #d2a8ff; font-weight: 600; } // functions
+      .na, .nb, .nc, .nd, .ni, .nl, .nn, .nt, .nv, .vc, .vg, .vi { color: #ffa657; } // identifiers
+      .o, .ow { color: #79c0ff; } // operators
+      .gp { color: #fde047; } // prompts
+    }
   }
-  
+
   blockquote {
     color: #94a3b8;
     border-left-color: #DECF03;
