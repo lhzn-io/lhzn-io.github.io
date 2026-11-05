@@ -44,7 +44,7 @@ The first design powered the Pi from the bus through an isolated 12 V to 5 V con
 
 1. **Low 5 V.** The converter has no output trim, and it holds the Pi's 5 V rail at 4.92 V idle. The Pi flags under-voltage (`throttled=0x50000`) on some boots.
 2. **Engine cranking.** On November 1 the voltage dip as the engine cranked crashed the hub with a kernel panic; that ride's data was recovered from the WIBL's own log ([the ride](https://www.youtube.com/watch?v=HS7JQ8Rz5V0)).
-3. **Hard power cuts at the dock.** The hub runs from the house batteries, which are switched off when we leave the boat. Over the 12 trips logged between September 30 and November 3, the logs end between 7.7 and 31 minutes after the boat stops at the dock, each time with the Pi still writing.
+3. **Hard power cuts at the dock.** The hub runs from the house batteries, which are switched off when we leave the boat. On 11 of the 12 trips logged between September 30 and November 3, the logs end between 7.7 and 31 minutes after the boat stops at the dock, each time with the Pi still writing; on the twelfth the batteries were left on overnight.
 
 The switch-off is also information: it means the trip is over. A hub that dies at that moment cannot report it.
 
@@ -55,12 +55,12 @@ The goal: when 12 V drops, the hub gets about a minute of hold-up, learns that i
 **Options we ruled out.**
 
 - *A USB power bank between the converter and the Pi.* Many banks drop their output for a fraction of a second while they renegotiate USB power delivery as the input comes or goes, which resets a Pi. Whether a bank that has run flat resumes output on its own when charging power returns varies by model and is rarely documented. And a Pi 5 that halts with 5 V still applied stays halted until its power button is pressed or power is removed and restored ([Raspberry Pi documentation](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html)), so a bank that keeps supplying 5 V after a clean shutdown means the Pi never sees power return.
-- *Lithium UPS boards.* Several Pi 5 UPS boards hold 18650 or 21700 cells, detect power loss and restart the Pi automatically. The hub sits in a sealed case in a boat that can reach 50 to 60 C in summer sun, above the charging range of most lithium cells, and none of the boards we found publish an operating temperature.
+- *Lithium UPS boards.* Several Pi 5 UPS boards hold 18650 or 21700 cells, detect power loss and restart the Pi automatically. The hub sits in a sealed case aboard a boat in direct sun. We have not yet measured the temperature inside the case, but we expect it to exceed the 0 to 45 C charging range typical of lithium cells in summer, and none of the boards we found publish an operating temperature.
 
 **The design.** We chose a supercapacitor UPS built for the Pi 5, the Geekworm UPS_Scap_5V5A (100 F version). Supercapacitors tolerate heat far better than lithium cells, and a minute of hold-up is all the job needs.
 
 - **Power path.** The board takes 9 to 24 V directly from the bus, so it replaces the converter, and it supplies 5 V at 5 A with the Pi 5's USB-PD handshake. The Pi then allows its USB ports their full current, which matters with the CAN adapter and the SSD on USB.
-- **Mounting.** It has the Pi's 85 x 56 mm footprint and mounts under it. Its signal contacts are spring-loaded pogo pins on its top face that press on the underside of the Pi: header pins 3 and 5 (I2C, for an INA219 current monitor at address 0x40), pin 37 (GPIO 26, high while input power is present), and the Pi 5's power button pads. The 40-pin header stays free, so the LoRa bonnet stacks on top as before.
+- **Mounting.** It has the Pi's 85 x 56 mm footprint and mounts under it. Its signal contacts are spring-loaded pogo pins on its top face that press on the underside of the Pi. From the vendor's documentation and assembly photos (not yet confirmed on our hardware), they meet header pins 3 and 5 (I2C, for an INA219 current monitor at address 0x40), pin 37 (GPIO 26, high while input power is present), and the Pi 5's power button pads. The 40-pin header stays free, so the LoRa bonnet stacks on top as before.
 - **Hold-up.** At the hub's draw, about 0.7 A at 5 V, the vendor's figures (88 to 101 s at 1 A) suggest about two minutes.
 
 ![Side view of the Rev C stack: HDPE plate, 18 mm standoffs, the UPS board with its supercapacitors below it, 9 mm standoffs, the Raspberry Pi 5 with the active cooler, and the LoRa bonnet with its OLED on the 40-pin header; pogo pins reach the Pi's underside at the I2C pins, GPIO 26 and the J2 power button pads](/assets/images/bosn/bosn-stack-rev-c.png)
