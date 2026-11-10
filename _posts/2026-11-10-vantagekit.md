@@ -1,3 +1,7 @@
+---
+title: "Standardizing 3D Viewer Navigation with vantagekit"
+---
+
 # Standardizing 3D Viewer Navigation with vantagekit
 
 We maintain several small viewers for terrain and ocean data: a 3D view of a seafloor elevation model, a preview of the wind and current fields that force an ocean model, a map that tracks our research boat, and others. Each viewer started with its own camera code, and no two behaved alike. Three defects were typical.

@@ -1,3 +1,7 @@
+---
+title: "bosn: An Instrument Hub for a Small Research Boat"
+---
+
 # bosn: An Instrument Hub for a Small Research Boat
 
 Our boat already knows a great deal about where it is and what the water is doing. Its chartplotters, heading sensor, sounder and radio share position, speed, heading, depth and water temperature with one another many times a second, and then the numbers are gone. `bosn` (short for boatswain, the crew member responsible for the boat's equipment) is a small computer that sits on that network, records everything, and makes it available to software ashore and aboard. This post describes it from the ground up: the network it listens to, the hardware in the box, what it does with the data, and the power design we are moving to after two months of use.
